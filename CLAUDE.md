@@ -9,7 +9,7 @@ Read this file at the start of every session. It is the single source of truth f
 **SalatTrack** is a Muslim prayer tracking PWA built by Musa Jawo.
 It tracks 5 daily prayers (Fajr, Dhuhr, Asr, Maghrib, Isha) with on-time/late/missed status, push notifications, weekly/monthly analytics, and AI-powered improvement suggestions.
 
-**Stack:** Next.js 15 · React 19 · Tailwind CSS v4 · Supabase (Auth + PostgreSQL) · Aladhan API · OpenRouter · Resend · Web Push · Vercel
+**Stack:** Next.js 16.2 · React 19.2.7 · Tailwind CSS v4 · Supabase (Auth + PostgreSQL) · Aladhan API · OpenRouter · Resend · Web Push · Vercel
 
 **This is a personal project — no production users yet.** However, treat it as production quality from day one. Every decision should be safe to scale.
 
