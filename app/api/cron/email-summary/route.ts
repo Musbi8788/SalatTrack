@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createServiceClient } from '@/lib/supabase/service'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
+
+  const resend = new Resend(process.env.RESEND_API_KEY)
 
   const supabase = createServiceClient()
   const today = new Date().toISOString().slice(0, 10)

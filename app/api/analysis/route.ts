@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
@@ -8,7 +8,7 @@ import type { PrayerLog } from '@/types'
 
 const MODEL = process.env.OPENROUTER_MODEL ?? 'mistralai/mistral-7b-instruct:free'
 
-export async function POST(_request: NextRequest): Promise<Response> {
+export async function POST(): Promise<Response> {
   const supabase = await createClient()
   const {
     data: { user },
