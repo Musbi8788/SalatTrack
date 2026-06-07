@@ -35,8 +35,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# PWA generated service worker (built by next-pwa)
-public/sw.js
+# PWA generated workers (built by next-pwa in Phase 7 — sw.js is hand-crafted, committed manually)
 public/workbox-*.js
 public/worker-*.js
 public/sw.js.map
