@@ -180,6 +180,7 @@ git commit -m "WIP"
 
 ## 7. Database Rules
 
+- **Supabase MCP is connected** — use `mcp__supabase__*` tools for schema inspection (`list_tables`, `execute_sql`), migrations (`apply_migration`), and type generation (`generate_typescript_types`) during development sessions.
 - Use `@supabase/ssr` server client in API routes and Server Components.
 - Always destructure `{ data, error }` from Supabase calls — always check `error` first.
 - No N+1 queries — batch with `.in()` instead of looping.
@@ -194,13 +195,13 @@ Full plan in `Context/IMPLEMENTATION_PLAN.md`. Work within the active phase.
 
 | # | Phase | Status |
 |---|---|---|
-| 0 | Project Bootstrap | ⬜ |
-| 1 | Authentication | ⬜ |
-| 2 | Prayer Times | ⬜ |
-| 3 | Prayer Logging | ⬜ |
-| 4 | Weekly + Monthly Views | ⬜ |
-| 5 | Notifications | ⬜ |
-| 6 | AI Analysis | ⬜ |
+| 0 | Project Bootstrap | ✅ |
+| 1 | Authentication | ✅ |
+| 2 | Prayer Times | ✅ |
+| 3 | Prayer Logging | ✅ |
+| 4 | Weekly + Monthly Views | ✅ |
+| 5 | Notifications | ✅ |
+| 6 | AI Analysis | 🔄 |
 | 7 | Settings + PWA Polish | ⬜ |
 
 Update the status column (⬜ → 🔄 → ✅) as phases progress.

@@ -20,7 +20,7 @@
 
 ### Tasks
 
-- [ ] **P0.1** Initialize Next.js 14 with App Router and TypeScript
+- [ ] **P0.1** Initialize Next.js 16 with App Router and TypeScript
   ```bash
   npx create-next-app@latest salattrack --typescript --tailwind --app --src-dir=false
   ```
