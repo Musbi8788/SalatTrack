@@ -111,25 +111,27 @@ export function SettingsClient({ profile }: Props) {
   }
 
   async function togglePush(next: boolean) {
+    setPushEnabled(next) // optimistic — visual updates immediately
     setToggleSaving(true)
-    if (next) {
-      const subscribed = await requestPermissionAndSubscribe()
-      if (subscribed) {
-        const ok = await patchSettings({ notification_enabled: true })
-        if (ok) setPushEnabled(true)
-      }
-    } else {
-      const ok = await patchSettings({ notification_enabled: false })
-      if (ok) setPushEnabled(false)
+    try {
+      const ok = await patchSettings({ notification_enabled: next })
+      if (!ok) { setPushEnabled(!next); return } // revert on failure
+      // Best-effort subscription when enabling — non-fatal if it fails
+      if (next) void requestPermissionAndSubscribe().catch(() => undefined)
+    } finally {
+      setToggleSaving(false)
     }
-    setToggleSaving(false)
   }
 
   async function toggleEmail(next: boolean) {
+    setEmailEnabled(next) // optimistic
     setToggleSaving(true)
-    const ok = await patchSettings({ email_notification: next })
-    if (ok) setEmailEnabled(next)
-    setToggleSaving(false)
+    try {
+      const ok = await patchSettings({ email_notification: next })
+      if (!ok) setEmailEnabled(!next) // revert on failure
+    } finally {
+      setToggleSaving(false)
+    }
   }
 
   return (
