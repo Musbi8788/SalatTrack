@@ -180,6 +180,7 @@ git commit -m "WIP"
 
 ## 7. Database Rules
 
+- **Supabase MCP is connected** — use `mcp__supabase__*` tools for schema inspection (`list_tables`, `execute_sql`), migrations (`apply_migration`), and type generation (`generate_typescript_types`) during development sessions.
 - Use `@supabase/ssr` server client in API routes and Server Components.
 - Always destructure `{ data, error }` from Supabase calls — always check `error` first.
 - No N+1 queries — batch with `.in()` instead of looping.
