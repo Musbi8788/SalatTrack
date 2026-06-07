@@ -18,6 +18,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
+  const resend = new Resend(process.env.RESEND_API_KEY)
   const supabase = createServiceClient()
   const today = new Date().toISOString().slice(0, 10)
 
