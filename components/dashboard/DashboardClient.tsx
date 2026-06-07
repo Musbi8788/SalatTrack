@@ -7,6 +7,7 @@ import { usePrayerLogs } from '@/hooks/usePrayerLogs'
 import type { PrayerLogsMap, PrayerLogEntry } from '@/hooks/usePrayerLogs'
 import { PrayerCard } from '@/components/prayer/PrayerCard'
 import { MapPinIcon, LoaderIcon, WifiOffIcon } from '@/components/icons'
+import { NotificationBanner } from '@/components/notifications/NotificationBanner'
 import type { PrayerName, PrayerStatus, PrayerTimes } from '@/types'
 
 const PRAYER_NAMES: PrayerName[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
@@ -49,9 +50,11 @@ export function DashboardClient({
   const [optimisticLogs, addOptimistic] = useOptimistic(logs, applyOptimistic)
   const [isPending, startTransition] = useTransition()
   const [loggingPrayer, setLoggingPrayer] = useState<PrayerName | null>(null)
+  const [logError, setLogError] = useState<string | null>(null)
 
-  async function handleLog(prayerName: PrayerName, scheduledTime: string) {
+  async function handleLog(prayerName: PrayerName, scheduledTime: string, logTime: string) {
     if (isPending) return
+    setLogError(null)
     setLoggingPrayer(prayerName)
 
     startTransition(async () => {
@@ -61,14 +64,23 @@ export function DashboardClient({
         const res = await fetch('/api/prayer-log', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prayer_name: prayerName, scheduled_time: scheduledTime }),
+          body: JSON.stringify({
+            prayer_name: prayerName,
+            scheduled_time: scheduledTime,
+            log_time: logTime,
+          }),
         })
 
         if (res.ok) {
           const data = (await res.json()) as { id: string; status: PrayerStatus; logged_at: string }
           const entry: PrayerLogEntry = { id: data.id, status: data.status, logged_at: data.logged_at }
           addLog(prayerName, entry)
+        } else {
+          const body = (await res.json()) as { error?: string }
+          setLogError(body.error ?? `Failed to save ${prayerName} (${res.status})`)
         }
+      } catch {
+        setLogError('Network error — check your connection and try again')
       } finally {
         setLoggingPrayer(null)
       }
@@ -79,6 +91,8 @@ export function DashboardClient({
 
   return (
     <div className="space-y-4">
+      <NotificationBanner />
+
       {/* Location pill */}
       <div className="inline-flex items-center gap-1.5 bg-raised border border-subtle rounded-full px-3 py-1">
         <MapPinIcon size={12} className="text-brand-blue" />
@@ -86,6 +100,22 @@ export function DashboardClient({
           {location.loading ? 'Locating...' : location.cityName}
         </span>
       </div>
+
+      {/* Log error banner — surfaces the Supabase error so it can be diagnosed */}
+      {logError && (
+        <div className="bg-brand-red-muted border border-brand-red/30 rounded-xl px-4 py-3
+                        flex items-start justify-between gap-3">
+          <p className="text-brand-red-light text-sm">{logError}</p>
+          <button
+            onClick={() => setLogError(null)}
+            aria-label="Dismiss"
+            className="text-brand-red-light/60 hover:text-brand-red-light text-lg leading-none shrink-0
+                       transition-colors"
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Prayer times loading */}
       {prayerTimes.loading && (
@@ -109,10 +139,9 @@ export function DashboardClient({
           {PRAYER_NAMES.map((name) => {
             const status = optimisticLogs[name]?.status ?? 'pending'
             const canLog = status === 'pending' && !isPending
-            // Wrap async handler so onLog stays () => void (not () => Promise<void>)
             // Conditional spread avoids passing onLog={undefined} (exactOptionalPropertyTypes)
             const logProp = canLog
-              ? { onLog: () => { void handleLog(name, times[name]) } }
+              ? { onLog: (logTime: string) => { void handleLog(name, times[name], logTime) } }
               : {}
             return (
               <PrayerCard
