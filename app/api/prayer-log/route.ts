@@ -103,5 +103,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json(data as PrayerLog[])
+  // Normalize Postgres TIME columns (HH:MM:SS) to HH:MM
+  return NextResponse.json((data as PrayerLog[]).map((log) => ({
+    ...log,
+    scheduled_time: log.scheduled_time.slice(0, 5),
+  })))
 }

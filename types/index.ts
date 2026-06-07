@@ -54,3 +54,12 @@ export interface MonthlyStats {
   bestPrayer: PrayerName | null
   worstPrayer: PrayerName | null
 }
+
+export interface AIAnalysisLog {
+  id: string
+  period_start: string        // 'YYYY-MM-DD'
+  period_end: string          // 'YYYY-MM-DD'
+  analysis_text: string
+  model_used: string
+  created_at: string
+}

@@ -2,12 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import webpush from 'web-push'
 import { createServiceClient } from '@/lib/supabase/service'
 
-webpush.setVapidDetails(
-  `mailto:${process.env.VAPID_SUBJECT ?? 'contact@salattrack.app'}`,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
-
 const PRAYER_COLUMNS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const
 type PrayerColumn = (typeof PRAYER_COLUMNS)[number]
 
@@ -39,6 +33,18 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
+
+  const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const vapidPrivate = process.env.VAPID_PRIVATE_KEY
+  if (!vapidPublic || !vapidPrivate) {
+    return NextResponse.json({ error: 'VAPID keys not configured' }, { status: 500 })
+  }
+
+  webpush.setVapidDetails(
+    `mailto:${process.env.VAPID_SUBJECT ?? 'contact@salattrack.app'}`,
+    vapidPublic,
+    vapidPrivate,
+  )
 
   const supabase = createServiceClient()
   const today = new Date().toISOString().slice(0, 10)

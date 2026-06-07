@@ -76,6 +76,33 @@ Entries include: what was built, key decisions made, bugs fixed, and deferred it
 
 ---
 
+## [Phase 1] 2026-06-07 — Authentication
+
+### Added
+
+- `app/(auth)/login/page.tsx` — Client component: email + password fields, `signInWithPassword`, inline error display, redirect to `/` on success, loading spinner on submit button; links to register page
+- `app/(auth)/register/page.tsx` — Client component: full name + email + password fields, client-side validation (full name ≥ 2 chars, password ≥ 6 chars), `signUp` with `options.data: { full_name }` so the DB trigger receives the name, redirect to `/` on success
+- `app/(dashboard)/layout.tsx` — Async server component: `getUser()` auth check (redirects to `/login` if no session), fetches `profiles.full_name` to pass to Navbar, renders `RegisterServiceWorker` + `<Navbar>` + `<BottomNav>` wrapping all dashboard pages; bottom padding accounts for fixed nav bar
+- `components/layout/Navbar.tsx` — Top navigation bar: SalatTrack brand mark + user's first name; logout server action calls `supabase.auth.signOut()` and redirects to `/login`
+- `components/layout/BottomNav.tsx` — Fixed bottom navigation: Home, Weekly, Monthly, Analysis tab icons; active state driven by `usePathname()`
+- Supabase DB trigger `on_auth_user_created` — `AFTER INSERT ON auth.users` trigger calls `create_profile_on_signup()` which inserts a row into `profiles` with `id`, `email`, and `full_name` from `raw_user_meta_data`
+
+### Key decisions
+
+- `full_name` passed via `options.data` in `signUp` (not a separate API call after registration) — the DB trigger reads `raw_user_meta_data->>'full_name'` so no extra round trip is needed
+- Dashboard layout does a second Supabase query for `profiles.full_name` separately from the middleware auth check — middleware only confirms session validity; layout fetches display data
+- Logout is a server action (not client-side) to ensure the Supabase SSR cookie is cleared correctly via `@supabase/ssr`
+
+### Phase 1 acceptance criteria
+
+- ✅ Register creates a new user and a matching `profiles` row (DB trigger confirmed)
+- ✅ Login with correct credentials reaches the dashboard
+- ✅ Unauthenticated visit to `/` redirects to `/login` (middleware)
+- ✅ Logout clears session and returns to `/login`
+- ✅ `npx tsc --noEmit` — 0 errors
+
+---
+
 ## [Phase 2] 2026-06-07 — Prayer Times
 
 ### Added
@@ -174,5 +201,84 @@ Entries include: what was built, key decisions made, bugs fixed, and deferred it
 - ⬜ Stats (streak, consistency) are mathematically correct (requires data in DB)
 
 ---
+
+---
+
+## [Phase 5] 2026-06-07 — Notifications
+
+### Added
+
+- `public/sw.js` — Service worker: install pre-caches `/` and `/manifest.json`; activate cleans old caches; fetch strategy: network-only for `/api/prayer-log` (logging must reach the server), network-first + cache fallback for `/api/prayer-times`, cache-first for all static assets; `push` event calls `self.registration.showNotification` with title/body/icon/badge/tag from the payload; `notificationclick` focuses an existing window or opens `/`
+- `lib/notifications.ts` — `requestPermissionAndSubscribe()`: browser-side only; requests `Notification.permission`, subscribes via `pushManager.subscribe` with the VAPID public key, POSTs the `PushSubscription` JSON to `/api/push/subscribe`; returns `true` on success
+- `app/api/push/subscribe/route.ts` — Authenticated POST: saves the full `PushSubscription` JSON to `profiles.push_subscription` (JSONB column) for the current user
+- `app/api/cron/push-notify/route.ts` — CRON_SECRET-guarded GET: fetches all users with a non-null `push_subscription` and `notification_enabled = true`; for each user resolves their prayer times from `prayer_time_cache` (falls back to Banjul coords); sends a push if any prayer is within the next 10 minutes; on 410 Gone clears `push_subscription` so the user is re-prompted; returns `{ ok, sent, cleared }`
+- `app/api/cron/email-summary/route.ts` — CRON_SECRET-guarded GET: fetches users with `email_notification = true`; queries `prayer_logs` per user for today; skips users with no missed/pending prayers; sends HTML email via Resend with a per-prayer status table (✓ On Time / ⏰ Late / ✗ Missed / — Pending) and the scheduled time for each prayer
+- `components/notifications/NotificationBanner.tsx` — Client component: shown on first dashboard load if `Notification.permission !== 'granted'`; "Enable prayer time notifications" banner; calls `requestPermissionAndSubscribe()` on click; dismisses on success or denial
+- `components/notifications/RegisterServiceWorker.tsx` — Client component mounted in dashboard layout; registers `/sw.js` via `navigator.serviceWorker.register` on mount (runs once per session)
+- `vercel.json` updated — added push-notify cron: `*/5 * * * *`
+
+### Key decisions
+
+- Service worker registration is a separate `RegisterServiceWorker` client component mounted in the dashboard layout, keeping the layout itself a server component
+- Push-notify cron runs every 5 minutes and checks a 10-minute window ahead — this means every prayer gets at most two notifications (at T-10 and T-5), which is acceptable
+- Email is only sent if the user has at least one `missed` or `pending` prayer for the day — prevents empty summary emails
+- 410 Gone handling clears the stale subscription immediately in the same cron run rather than deferring, so the user sees the permission banner again on next dashboard visit
+
+### Phase 5 acceptance criteria
+
+- ✅ `npx tsc --noEmit` — 0 errors
+- ✅ ESLint — 0 errors on Phase 5 files
+- ⬜ Push notification appears in browser at prayer time (test with system clock or manual cron trigger)
+- ⬜ Email arrives for any user with a missed/pending prayer (test via Resend dashboard)
+- ⬜ 410 response clears `push_subscription` in `profiles` table
+- ⬜ Users can toggle notifications off in settings (Phase 7)
+
+### PR
+
+- `feature/notifications` → `dev`: https://github.com/Musbi8788/SalatTrack/pull/6
+
+---
+
+## [Phase 6] 2026-06-07 — AI Analysis
+
+### Added
+
+- `lib/openrouter.ts` — `fetchAnalysisStream(logs, stats, model)`: builds a system prompt and a user prompt from 30-day `PrayerLog[]` + `MonthlyStats` (per-prayer breakdown + 7-day pattern); calls `POST https://openrouter.ai/api/v1/chat/completions` with `stream: true`; returns the raw `Response` so the route can pipe it. No user coordinates or PII sent.
+- `app/api/analysis/route.ts` — Authenticated POST: fetches last-30-day prayer logs; returns 422 if no settled logs exist; builds stats via `getMonthlyStats`; pipes the OpenRouter SSE response through a `TransformStream` that accumulates `fullText` while forwarding every chunk to the client; schedules an `after()` callback (runs post-stream) that inserts into `ai_analysis_logs` via the service client; returns `text/event-stream` response. Default model: `OPENROUTER_MODEL ?? 'google/gemini-2.0-flash-001'`.
+- `app/api/analysis/history/route.ts` — Authenticated GET: returns the 10 most recent `ai_analysis_logs` rows for the current user.
+- `components/analysis/AIAnalysisCard.tsx` — `'use client'` component with four phases (`idle → streaming → done → error`). Uses `fetch('/api/analysis', { method: 'POST' })` then `ReadableStreamDefaultReader` to parse SSE chunks incrementally; renders each chunk into a live `<ReactMarkdown>` block using design-system custom renderers. Past analyses accordion collapses/expands each history item with a `ChevronDownIcon`. Handles 422 (no data) and network errors with distinct messages.
+- `app/(dashboard)/analysis/page.tsx` — Server component: fetches `ai_analysis_logs` history on load; passes `initialHistory` to `AIAnalysisCard`.
+- `types/index.ts` — Added `AIAnalysisLog` interface.
+- `CLAUDE.md` — Updated phase status: Phases 3, 4, 5 → ✅; Phase 6 → ✅.
+- `package.json` / `package-lock.json` — Added `react-markdown` dependency.
+
+### Key decisions
+
+- `after()` from `next/server` used for the DB insert — avoids holding the streaming response open while waiting for the DB write; the client gets the full analysis in real time and the row is committed ~1s after stream ends
+- `TransformStream` intercepts the SSE bytes in-flight to accumulate `fullText` for the DB insert, without buffering the response
+- Model configurable via `OPENROUTER_MODEL` env var; fallback to `google/gemini-2.0-flash-001`; actual first run used `openai/gpt-4o-mini` (env var override)
+- `react-markdown` + custom `Components` map for all block/inline elements to enforce design-system tokens (`text-text-primary`, `text-brand-blue`, `border-subtle`, etc.) — no raw HTML
+
+### Phase 6 acceptance criteria
+
+- ✅ Clicking "Analyze My Prayers" streams a personalized analysis in real time
+- ✅ Analysis saved to `ai_analysis_logs` via `after()` (confirmed: POST 201 in Supabase logs)
+- ✅ Past analyses visible in the accordion below the button
+- ✅ 422 shown if no non-pending prayer logs exist
+- ✅ `npx tsc --noEmit` — 0 errors
+
+---
+
+## [Fix] 2026-06-07 — Postgres TIME format bug + email-summary completion
+
+### Fixed
+
+- **`POST /api/prayer-log` returning 400 on cached prayer times** — Root cause: all prayer time columns in `prayer_time_cache` and `prayer_logs` are `time without time zone` in Postgres, which returns values as `HH:MM:SS`. The Zod schema in the prayer-log POST route only accepted `HH:mm`. First load worked (Aladhan returns `HH:mm` directly); every subsequent cache hit failed validation. Fixed by slicing to 5 chars (`.slice(0, 5)`) when reading from the DB in:
+  - `app/api/prayer-times/route.ts` — normalizes cached times before returning `PrayerTimes`
+  - `app/api/prayer-log/route.ts` — normalizes `scheduled_time` in GET daily logs response
+  - `app/api/prayer-log/weekly/route.ts` — normalizes `scheduled_time` in each `DayLogs` entry
+  - `app/api/prayer-log/monthly/route.ts` — normalizes `scheduled_time` in monthly log response
+
+- **`email-summary` sending to all users regardless of prayer status** — The `hasMissed = true` stub (left from Phase 5 pending Phase 3 merge) was wired up: now queries `prayer_logs` per user for today and skips any user with no `missed` or `pending` logs. `buildEmailHtml` updated to accept the logs array and render each prayer's actual scheduled time and color-coded status icon.
 
 <!-- Add new entries above this line, most recent first -->

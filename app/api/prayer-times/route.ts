@@ -54,13 +54,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       maghrib: string
       isha: string
     }
+    // Postgres TIME columns return HH:MM:SS — slice to HH:MM to match the HH:mm contract
+    const hhmm = (t: string) => t.slice(0, 5)
     return NextResponse.json<PrayerTimes>({
-      Fajr: row.fajr,
-      Sunrise: row.sunrise,
-      Dhuhr: row.dhuhr,
-      Asr: row.asr,
-      Maghrib: row.maghrib,
-      Isha: row.isha,
+      Fajr: hhmm(row.fajr),
+      Sunrise: hhmm(row.sunrise),
+      Dhuhr: hhmm(row.dhuhr),
+      Asr: hhmm(row.asr),
+      Maghrib: hhmm(row.maghrib),
+      Isha: hhmm(row.isha),
     })
   }
 
