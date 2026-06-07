@@ -4,6 +4,14 @@ import { createServiceClient } from '@/lib/supabase/service'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+const PRAYER_ORDER = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'] as const
+
+interface PrayerLogRow {
+  prayer_name: string
+  status: string
+  scheduled_time: string
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
@@ -25,21 +33,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   let sent = 0
 
   for (const user of users ?? []) {
-    // TODO(Phase 3): Query prayer_logs to filter only users with missed/pending prayers today.
-    // Uncomment and fill in once prayer_logs route is merged:
-    //
-    //   const { data: logs } = await supabase
-    //     .from('prayer_logs')
-    //     .select('prayer_name, status, scheduled_time')
-    //     .eq('user_id', user.id)
-    //     .eq('prayer_date', today)
-    //
-    //   const hasMissed = logs?.some((l) => l.status === 'missed' || l.status === 'pending')
-    //   if (!hasMissed) continue
-    //
-    // Remove the line below once the TODO above is wired up:
-    const hasMissed = true
+    const { data: logs } = await supabase
+      .from('prayer_logs')
+      .select('prayer_name, status, scheduled_time')
+      .eq('user_id', user.id)
+      .eq('prayer_date', today)
 
+    const hasMissed = logs?.some((l) => l.status === 'missed' || l.status === 'pending')
     if (!hasMissed) continue
 
     const firstName = (user.full_name as string | null)?.split(' ')[0] ?? 'Friend'
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       from: 'SalatTrack <noreply@salattrack.app>',
       to: user.email as string,
       subject: `Your Prayer Summary for ${today}`,
-      html: buildEmailHtml(firstName, dateLabel),
+      html: buildEmailHtml(firstName, dateLabel, (logs ?? []) as PrayerLogRow[]),
     })
 
     if (!sendError) sent++
@@ -63,18 +63,46 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   return NextResponse.json({ ok: true, sent })
 }
 
-function buildEmailHtml(firstName: string, dateLabel: string): string {
-  const prayerRows = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
-    .map(
-      (p) => `
+function statusLabel(status: string): string {
+  switch (status) {
+    case 'on_time': return '✓ On Time'
+    case 'late':    return '⏰ Late'
+    case 'missed':  return '✗ Missed'
+    default:        return '— Pending'
+  }
+}
+
+function statusColor(status: string): string {
+  switch (status) {
+    case 'on_time': return '#4FC3F7'
+    case 'late':    return '#F59E0B'
+    case 'missed':  return '#E05A5A'
+    default:        return '#7070A0'
+  }
+}
+
+function buildEmailHtml(firstName: string, dateLabel: string, logs: PrayerLogRow[]): string {
+  const logsByName = new Map(logs.map((l) => [l.prayer_name, l]))
+
+  const prayerRows = PRAYER_ORDER.map((name) => {
+    const log = logsByName.get(name)
+    const status = log?.status ?? 'pending'
+    const time = log?.scheduled_time.slice(0, 5) ?? '—'
+    const label = statusLabel(status)
+    const color = statusColor(status)
+
+    return `
       <tr>
-        <td style="padding:10px 0;font-size:14px;color:#E8E8F0;border-bottom:1px solid #2A2A42">${p}</td>
-        <td style="padding:10px 0;text-align:right;font-size:13px;color:#7070A0;border-bottom:1px solid #2A2A42">
-          See app for details
+        <td style="padding:10px 0;font-size:14px;color:#E8E8F0;border-bottom:1px solid #2A2A42">
+          ${name}
+          <span style="font-size:12px;color:#7070A0;margin-left:6px">${time}</span>
+        </td>
+        <td style="padding:10px 0;text-align:right;font-size:13px;color:${color};
+                   font-weight:600;border-bottom:1px solid #2A2A42">
+          ${label}
         </td>
       </tr>`
-    )
-    .join('')
+  }).join('')
 
   return `<!DOCTYPE html>
 <html lang="en">
