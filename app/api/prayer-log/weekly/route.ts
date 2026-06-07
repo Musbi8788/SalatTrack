@@ -54,9 +54,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     grouped.set(log.prayer_date, existing)
   }
 
+  // Normalize Postgres TIME columns (HH:MM:SS) to HH:MM
   const result: DayLogs[] = Array.from({ length: 7 }, (_, i) => {
     const date = addDays(start, i)
-    return { date, logs: grouped.get(date) ?? [] }
+    const logs = (grouped.get(date) ?? []).map((log) => ({
+      ...log,
+      scheduled_time: log.scheduled_time.slice(0, 5),
+    }))
+    return { date, logs }
   })
 
   return NextResponse.json(result)
