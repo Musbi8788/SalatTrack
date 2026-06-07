@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme {
+  /* ── Backgrounds ───────────────────────────────────────────────────────── */
+  --color-base:    #080810;
+  --color-surface: #12121E;
+  --color-raised:  #1C1C2E;
+  --color-subtle:  #2A2A42;
+  --color-strong:  #3D3D5C;
+
+  /* ── Brand: Red ────────────────────────────────────────────────────────── */
+  --color-brand-red:       #C0272D;
+  --color-brand-red-light: #E03038;
+  --color-brand-red-muted: #C0272D26;
+
+  /* ── Brand: Blue ───────────────────────────────────────────────────────── */
+  --color-brand-blue:      #4FC3F7;
+  --color-brand-blue-deep: #29B6F6;
+  --color-brand-blue-muted: #4FC3F726;
+
+  /* ── Late (amber — for late prayer status) ─────────────────────────────── */
+  --color-late:      #F59E0B;
+  --color-late-muted: #F59E0B26;
+
+  /* ── Text ──────────────────────────────────────────────────────────────── */
+  --color-text-primary:   #FFFFFF;
+  --color-text-secondary: #E8E8F0;
+  --color-text-muted:     #7070A0;
+  --color-text-disabled:  #3A3A58;
+
+  /* ── Font ──────────────────────────────────────────────────────────────── */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
