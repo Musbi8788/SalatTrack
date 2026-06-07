@@ -12,11 +12,11 @@ When in doubt, follow the linked documentation — do not rely on training data 
 
 | Technology | Version | Notes |
 |---|---|---|
-| Next.js | **15** (App Router) | NOT Next.js 14 — use v15 patterns |
+| Next.js | **16** (App Router) | NOT Next.js 14 — use v16 patterns |
 | React | **19** | Ships with Next.js 15 |
 | Tailwind CSS | **v4** | Config is CSS-first, not JS config |
 | TypeScript | **5.x** | Strict mode enabled |
-| Node.js | **20 LTS** | Minimum for Next.js 15 |
+| Node.js | **20 LTS** | Minimum for Next.js 16 |
 
 ---
 
@@ -24,7 +24,7 @@ When in doubt, follow the linked documentation — do not rely on training data 
 
 | Topic | URL |
 |---|---|
-| Next.js 15 full docs | https://nextjs.org/docs |
+| Next.js 16 full docs | https://nextjs.org/docs |
 | Next.js App Router | https://nextjs.org/docs/app |
 | Next.js API Routes | https://nextjs.org/docs/app/building-your-application/routing/route-handlers |
 | Next.js Server Actions | https://nextjs.org/docs/app/building-your-application/data-fetching/server-actions-and-mutations |
@@ -39,7 +39,7 @@ When in doubt, follow the linked documentation — do not rely on training data 
 
 ---
 
-## 1. Next.js 15 — App Router
+## 1. Next.js 16 — App Router
 
 ### Bootstrap command
 ```bash
@@ -51,9 +51,9 @@ npx create-next-app@latest salattrack \
   --import-alias "@/*"
 ```
 
-### What changed from Next.js 14 → 15 (agent must know)
+### What changed from Next.js 15 → 16 (agent must know)
 
-| Feature | Next.js 14 | Next.js 15 |
+| Feature | Next.js 14 | Next.js 16 |
 |---|---|---|
 | Async params/searchParams | sync | **async** — always `await params` |
 | fetch caching default | cached by default | **not cached by default** |
@@ -63,7 +63,7 @@ npx create-next-app@latest salattrack \
 
 **Breaking change — always await dynamic APIs:**
 ```typescript
-// WRONG (Next.js 14 pattern — will error in Next.js 15)
+// WRONG (Next.js 14 pattern — will error in Next.js 16)
 export default function Page({ params }: { params: { id: string } }) {
   return <div>{params.id}</div>
 }
