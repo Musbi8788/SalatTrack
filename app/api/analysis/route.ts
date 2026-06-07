@@ -6,7 +6,7 @@ import { getMonthlyStats } from '@/lib/prayers'
 import { fetchAnalysisStream } from '@/lib/openrouter'
 import type { PrayerLog } from '@/types'
 
-const MODEL = process.env.OPENROUTER_MODEL ?? 'mistralai/mistral-7b-instruct:free'
+const MODEL = process.env.OPENROUTER_MODEL ?? 'google/gemini-2.0-flash-001'
 
 export async function POST(): Promise<Response> {
   const supabase = await createClient()
