@@ -1,7 +1,7 @@
 {
   "crons": [
-    { "path": "/api/cron/auto-miss",      "schedule": "*/30 * * * *" },
-    { "path": "/api/cron/push-notify",    "schedule": "*/5 * * * *"  },
+    { "path": "/api/cron/auto-miss",      "schedule": "0 0 * * *"  },
+    { "path": "/api/cron/push-notify",    "schedule": "0 4 * * *"  },
     { "path": "/api/cron/email-summary",  "schedule": "0 23 * * *"   }
   ]
 }
