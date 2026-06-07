@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import type { CookieOptions } from '@supabase/ssr'
 
-const PUBLIC_PATHS = ['/login', '/register']
+const AUTH_PATHS = ['/login', '/register']
 
 export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request })
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -19,39 +19,49 @@ export async function middleware(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
-          response = NextResponse.next({ request })
+          supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options)
           )
         },
       },
     }
   )
 
-  // getUser() validates the JWT with Supabase — never use getSession() here
+  // getUser() validates JWT with Supabase server — never use getSession() here
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const pathname = request.nextUrl.pathname
-  const isPublicPath = PUBLIC_PATHS.includes(pathname)
+  const { pathname } = request.nextUrl
 
-  // Redirect unauthenticated users away from protected pages
-  if (!user && !isPublicPath) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // Unauthenticated: redirect away from protected pages
+  if (!user && !AUTH_PATHS.some((p) => pathname.startsWith(p))) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from auth pages
-  if (user && isPublicPath) {
-    return NextResponse.redirect(new URL('/', request.url))
+  // Authenticated: redirect away from auth pages
+  if (user && AUTH_PATHS.some((p) => pathname.startsWith(p))) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
   }
 
-  return response
+  return supabaseResponse
 }
 
 export const config = {
   matcher: [
-    // Match all routes except Next.js internals and static files
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)',
+    /*
+     * Match all routes except:
+     * - _next/static  (static files)
+     * - _next/image   (image optimization)
+     * - _next/data    (Next.js data fetching — internal, not pages)
+     * - favicon.ico
+     * - common static asset extensions
+     */
+    '/((?!_next/static|_next/image|_next/data|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)',
   ],
 }
