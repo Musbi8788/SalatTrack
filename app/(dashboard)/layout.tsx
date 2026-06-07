@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/layout/Navbar'
 import { BottomNav } from '@/components/layout/BottomNav'
+import { RegisterServiceWorker } from '@/components/notifications/RegisterServiceWorker'
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient()
@@ -22,6 +23,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
 
   return (
     <div className="min-h-screen bg-base flex flex-col">
+      <RegisterServiceWorker />
       <Navbar fullName={fullName} />
       <main className="flex-1 pb-20">
         {children}
