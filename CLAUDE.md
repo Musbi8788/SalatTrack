@@ -30,7 +30,7 @@ The `Context/` folder contains the full design and planning documentation.
 | `Context/DESIGN-STYLE.md` | Writing any UI component, choosing colors, or using icons |
 | `Context/CODE-REVIEW.md` | Before every `git commit` — run the full checklist |
 | `Context/VERSION-CONTROL.md` | Before creating branches, commits, or PRs — full workflow reference |
-| `Context/CHANGELOG.md` | After completing a session — append what was built and decided |
+| `CHANGELOG.md` | After completing a session — append what was built and decided (root of project) |
 
 ---
 
