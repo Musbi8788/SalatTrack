@@ -12,7 +12,7 @@ import {
   LogOutIcon,
   LoaderIcon,
 } from '@/components/icons'
-import type { Profile } from '@/types'
+import type { Profile, PrayerName, PrayerTimeOverrides, PrayerTimes } from '@/types'
 
 const CALCULATION_METHODS: { value: number; label: string }[] = [
   { value: 1,  label: 'University of Islamic Sciences, Karachi' },
@@ -30,8 +30,13 @@ const CALCULATION_METHODS: { value: number; label: string }[] = [
   { value: 15, label: 'Moonsighting Committee Worldwide' },
 ]
 
+const PRAYER_NAMES: PrayerName[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
+
 interface Props {
   profile: Profile
+  /** Today's Aladhan times from the DB cache — shown as placeholders.
+   *  Null when the cache hasn't been populated yet (user hasn't opened dashboard today). */
+  aladhanTimes: Omit<PrayerTimes, 'Sunrise'> | null
 }
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
@@ -45,20 +50,33 @@ async function patchSettings(fields: Record<string, unknown>): Promise<boolean> 
   return res.ok
 }
 
-export function SettingsClient({ profile }: Props) {
+export function SettingsClient({ profile, aladhanTimes }: Props) {
   const router = useRouter()
 
-  const [fullName, setFullName]     = useState(profile.full_name ?? '')
-  const [cityName, setCityName]     = useState(profile.city_name ?? '')
-  const [method, setMethod]         = useState(profile.calculation_method)
+  const [fullName, setFullName]       = useState(profile.full_name ?? '')
+  const [cityName, setCityName]       = useState(profile.city_name ?? '')
+  const [method, setMethod]           = useState(profile.calculation_method)
   const [pushEnabled, setPushEnabled] = useState(profile.notification_enabled)
   const [emailEnabled, setEmailEnabled] = useState(profile.email_notification)
 
-  const [profileSave, setProfileSave] = useState<SaveState>('idle')
-  const [locationSave, setLocationSave] = useState<SaveState>('idle')
+  // Prayer time overrides — keyed by prayer name, value is 'HH:mm' string or '' (not set)
+  const [overrides, setOverrides] = useState<Record<PrayerName, string>>(() => {
+    const saved = profile.prayer_time_overrides ?? {}
+    return {
+      Fajr:    saved.Fajr    ?? '',
+      Dhuhr:   saved.Dhuhr   ?? '',
+      Asr:     saved.Asr     ?? '',
+      Maghrib: saved.Maghrib ?? '',
+      Isha:    saved.Isha    ?? '',
+    }
+  })
+
+  const [profileSave, setProfileSave]     = useState<SaveState>('idle')
+  const [locationSave, setLocationSave]   = useState<SaveState>('idle')
   const [detectingLocation, setDetectingLocation] = useState(false)
-  const [methodSave, setMethodSave] = useState<SaveState>('idle')
-  const [toggleSaving, setToggleSaving] = useState(false)
+  const [methodSave, setMethodSave]       = useState<SaveState>('idle')
+  const [overridesSave, setOverridesSave] = useState<SaveState>('idle')
+  const [toggleSaving, setToggleSaving]   = useState(false)
 
   async function saveProfile() {
     setProfileSave('saving')
@@ -107,16 +125,37 @@ export function SettingsClient({ profile }: Props) {
     setMethodSave('saving')
     const ok = await patchSettings({ calculation_method: value })
     setMethodSave(ok ? 'saved' : 'error')
-    if (ok) setTimeout(() => setMethodSave('idle'), 2000)
+    if (ok) {
+      setTimeout(() => setMethodSave('idle'), 2000)
+      router.refresh() // sync dashboard prayer times to new method
+    }
+  }
+
+  async function savePrayerTimeOverrides() {
+    setOverridesSave('saving')
+    // Build the payload: present values go as 'HH:mm', empty strings send null (clears override)
+    const payload: Record<string, string | null> = {}
+    for (const name of PRAYER_NAMES) {
+      payload[name] = overrides[name].trim() || null
+    }
+    const ok = await patchSettings({ prayer_time_overrides: payload })
+    setOverridesSave(ok ? 'saved' : 'error')
+    if (ok) {
+      setTimeout(() => setOverridesSave('idle'), 2000)
+      router.refresh() // sync dashboard to new prayer times
+    }
+  }
+
+  function clearOverride(name: PrayerName) {
+    setOverrides((prev) => ({ ...prev, [name]: '' }))
   }
 
   async function togglePush(next: boolean) {
-    setPushEnabled(next) // optimistic — visual updates immediately
+    setPushEnabled(next)
     setToggleSaving(true)
     try {
       const ok = await patchSettings({ notification_enabled: next })
-      if (!ok) { setPushEnabled(!next); return } // revert on failure
-      // Best-effort subscription when enabling — non-fatal if it fails
+      if (!ok) { setPushEnabled(!next); return }
       if (next) void requestPermissionAndSubscribe().catch(() => undefined)
     } finally {
       setToggleSaving(false)
@@ -124,11 +163,11 @@ export function SettingsClient({ profile }: Props) {
   }
 
   async function toggleEmail(next: boolean) {
-    setEmailEnabled(next) // optimistic
+    setEmailEnabled(next)
     setToggleSaving(true)
     try {
       const ok = await patchSettings({ email_notification: next })
-      if (!ok) setEmailEnabled(!next) // revert on failure
+      if (!ok) setEmailEnabled(!next)
     } finally {
       setToggleSaving(false)
     }
@@ -201,7 +240,7 @@ export function SettingsClient({ profile }: Props) {
         <SaveButton state={locationSave} onClick={saveCityName} label="Save city" />
       </section>
 
-      {/* ── Prayer calculation ──────────────────────────────────── */}
+      {/* ── Prayer calculation method ────────────────────────────── */}
       <section className="bg-surface border border-subtle rounded-2xl p-5 space-y-4">
         <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
           Calculation method
@@ -233,6 +272,60 @@ export function SettingsClient({ profile }: Props) {
             {methodSave === 'saving' ? 'Saving…' : methodSave === 'saved' ? 'Method updated' : 'Failed to save'}
           </p>
         )}
+      </section>
+
+      {/* ── Prayer time overrides ────────────────────────────────── */}
+      <section className="bg-surface border border-subtle rounded-2xl p-5 space-y-4">
+        <div>
+          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Prayer time overrides
+          </span>
+          <p className="text-xs text-text-muted mt-1">
+            Override individual prayer times to match your local mosque.
+            Leave a field empty to use the auto-calculated time.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {PRAYER_NAMES.map((name) => {
+            const placeholder = aladhanTimes
+              ? `Auto: ${aladhanTimes[name]}`
+              : 'Auto (open dashboard first)'
+            const hasOverride = overrides[name].trim() !== ''
+            return (
+              <div key={name} className="flex items-center gap-3">
+                <label className="w-16 shrink-0 text-sm font-medium text-text-secondary">
+                  {name}
+                </label>
+                <input
+                  type="time"
+                  value={overrides[name]}
+                  onChange={(e) =>
+                    setOverrides((prev) => ({ ...prev, [name]: e.target.value }))
+                  }
+                  placeholder={placeholder}
+                  className="flex-1 bg-raised border border-subtle rounded-xl px-4 py-2.5
+                             text-sm text-text-primary placeholder:text-text-muted
+                             focus:outline-none focus:border-strong transition-colors
+                             min-h-[44px] [color-scheme:dark]"
+                />
+                {hasOverride && (
+                  <button
+                    type="button"
+                    onClick={() => clearOverride(name)}
+                    title="Clear override"
+                    className="shrink-0 text-text-muted hover:text-brand-red-light transition-colors
+                               text-lg leading-none px-1"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        <SaveButton state={overridesSave} onClick={savePrayerTimeOverrides} label="Save prayer times" />
       </section>
 
       {/* ── Notifications ───────────────────────────────────────── */}

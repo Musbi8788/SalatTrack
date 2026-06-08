@@ -8,9 +8,24 @@ import type { PrayerLogsMap, PrayerLogEntry } from '@/hooks/usePrayerLogs'
 import { PrayerCard } from '@/components/prayer/PrayerCard'
 import { MapPinIcon, LoaderIcon, WifiOffIcon } from '@/components/icons'
 import { NotificationBanner } from '@/components/notifications/NotificationBanner'
-import type { PrayerName, PrayerStatus, PrayerTimes } from '@/types'
+import type { PrayerName, PrayerStatus, PrayerTimes, PrayerTimeOverrides } from '@/types'
 
 const PRAYER_NAMES: PrayerName[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']
+
+function applyOverrides(
+  aladhan: PrayerTimes,
+  overrides: PrayerTimeOverrides | null
+): PrayerTimes {
+  if (!overrides) return aladhan
+  return {
+    Fajr:    overrides.Fajr    ?? aladhan.Fajr,
+    Sunrise: aladhan.Sunrise,  // not a prayer — never overrideable
+    Dhuhr:   overrides.Dhuhr   ?? aladhan.Dhuhr,
+    Asr:     overrides.Asr     ?? aladhan.Asr,
+    Maghrib: overrides.Maghrib ?? aladhan.Maghrib,
+    Isha:    overrides.Isha    ?? aladhan.Isha,
+  }
+}
 
 interface DashboardClientProps {
   initialLat: number | null
@@ -18,6 +33,7 @@ interface DashboardClientProps {
   initialCityName: string | null
   method: number
   todayDate: string  // 'YYYY-MM-DD'
+  prayerTimeOverrides: PrayerTimeOverrides | null
 }
 
 interface OptimisticAction {
@@ -42,6 +58,7 @@ export function DashboardClient({
   initialCityName,
   method,
   todayDate,
+  prayerTimeOverrides,
 }: DashboardClientProps) {
   const location = useLocation({ initialLat, initialLng, initialCityName })
   const prayerTimes = usePrayerTimes(location.lat, location.lng, todayDate, method, !location.loading)
@@ -88,6 +105,8 @@ export function DashboardClient({
   }
 
   const times: PrayerTimes | null = prayerTimes.data
+    ? applyOverrides(prayerTimes.data, prayerTimeOverrides)
+    : null
 
   return (
     <div className="space-y-4">

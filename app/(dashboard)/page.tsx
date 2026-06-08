@@ -10,7 +10,7 @@ export default async function DashboardPage() {
   const { data: profile } = user
     ? await supabase
         .from('profiles')
-        .select('full_name, location_lat, location_lng, city_name, calculation_method')
+        .select('full_name, location_lat, location_lng, city_name, calculation_method, prayer_time_overrides')
         .eq('id', user.id)
         .single()
     : { data: null }
@@ -44,6 +44,7 @@ export default async function DashboardPage() {
         initialCityName={profile?.city_name ?? null}
         method={profile?.calculation_method ?? 3}
         todayDate={todayDate}
+        prayerTimeOverrides={profile?.prayer_time_overrides ?? null}
       />
     </div>
   )
