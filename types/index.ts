@@ -1,6 +1,10 @@
 export type PrayerName = 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha'
 export type PrayerStatus = 'on_time' | 'late' | 'missed' | 'pending'
 
+/** Per-prayer manual overrides stored in profiles.prayer_time_overrides.
+ *  Only keys that are overridden are present; absent keys fall back to Aladhan. */
+export type PrayerTimeOverrides = Partial<Record<PrayerName, string>> // HH:mm
+
 export interface Profile {
   id: string
   full_name: string
@@ -12,6 +16,7 @@ export interface Profile {
   notification_enabled: boolean
   email_notification: boolean
   push_subscription: PushSubscriptionJSON | null
+  prayer_time_overrides: PrayerTimeOverrides | null
   created_at: string
   updated_at: string
 }

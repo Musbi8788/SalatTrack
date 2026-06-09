@@ -667,14 +667,18 @@ NEXT_PUBLIC_APP_URL=https://salattrack.vercel.app
 
 ## 16. Future Roadmap
 
+> **Note on public leaderboards:** A community prayer leaderboard is intentionally excluded from SalatTrack. Public rankings create pressure toward riya (showing off) and undermine the sincerity that prayer requires. SalatTrack is a personal muhasabah (self-accountability) tool — not a competition.
+
 | Feature | Priority | Notes |
 |---|---|---|
 | Qibla direction | Medium | Using device compass + coordinates |
 | Hijri calendar | Medium | Display Islamic dates natively |
-| Community leaderboard | Low | Optional — compare streaks with friends |
-| Quran reading tracker | Low | Expand to full Ibadah tracker |
+| Personal Reflection Journal | Medium | Daily notes on prayer experience and intentions |
+| Dua Tracking | Medium | Log personal duas and track their outcomes |
+| Qada Prayer Tracker | Medium | Track missed prayers that need to be made up |
+| Quran Reading Consistency | Low | Daily ayat/page log alongside prayer |
+| Personal Goal Setting | Medium | User-defined weekly prayer targets |
 | Mobile app (React Native) | High | Post-MVP, when user base grows |
-| Missed prayer (Qada) tracker | Medium | Track prayers to make up |
 | Multi-language support | Medium | Arabic, French for West Africa |
 | Offline mode | High | PWA should work without internet |
 

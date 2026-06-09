@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { AIAnalysisCard } from '@/components/analysis/AIAnalysisCard'
+import { IntentionReminder } from '@/components/islamic/IntentionReminder'
+import { SpiritualDisclaimer } from '@/components/islamic/SpiritualDisclaimer'
 import type { AIAnalysisLog } from '@/types'
 
 export default async function AnalysisPage() {
@@ -27,6 +29,9 @@ export default async function AnalysisPage() {
           Personalized insights based on your last 30 days of prayer data
         </p>
       </div>
+
+      <IntentionReminder />
+      <SpiritualDisclaimer />
 
       <AIAnalysisCard initialHistory={history} />
     </div>

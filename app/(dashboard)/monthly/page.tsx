@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { PrayerCalendar } from '@/components/prayer/PrayerCalendar'
 import { PrayerStats } from '@/components/prayer/PrayerStats'
+import { IntentionReminder } from '@/components/islamic/IntentionReminder'
+import { SpiritualDisclaimer } from '@/components/islamic/SpiritualDisclaimer'
 import { getMonthlyStats } from '@/lib/prayers'
 import type { PrayerLog } from '@/types'
 
@@ -48,6 +50,8 @@ export default async function MonthlyPage({
     <div className="px-4 pt-6 pb-24 space-y-6">
       <h1 className="text-xl font-semibold text-text-primary">Monthly Overview</h1>
 
+      <IntentionReminder />
+
       <PrayerCalendar logs={logs} month={month} year={year} today={today} />
 
       <div>
@@ -55,6 +59,7 @@ export default async function MonthlyPage({
           Stats
         </h2>
         <PrayerStats stats={stats} />
+        <SpiritualDisclaimer />
       </div>
     </div>
   )
