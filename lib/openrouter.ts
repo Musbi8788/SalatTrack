@@ -77,7 +77,7 @@ export async function fetchAnalysisStream(
     headers: {
       Authorization: `Bearer ${process.env.OPENROUTER_API_KEY!}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://salattrack.app',
+      'HTTP-Referer': 'https://salattrack-gamma.vercel.app',
       'X-Title': 'SalatTrack',
     },
     body: JSON.stringify({
