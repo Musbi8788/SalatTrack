@@ -32,10 +32,16 @@ export function usePrayerTimes(
 
     fetch(url, { signal: controller.signal })
       .then(async (res) => {
+        const isJson = res.headers.get('content-type')?.includes('application/json')
         if (!res.ok) {
-          const body = (await res.json()) as { error?: string }
-          throw new Error(body.error ?? 'Failed to load prayer times')
+          if (isJson) {
+            const body = (await res.json()) as { error?: string }
+            throw new Error(body.error ?? 'Failed to load prayer times')
+          }
+          // Non-JSON error (e.g. middleware HTML redirect) — surface a clean message
+          throw new Error(res.status === 401 ? 'Session expired — please refresh' : 'Failed to load prayer times')
         }
+        if (!isJson) throw new Error('Failed to load prayer times')
         return res.json() as Promise<PrayerTimes>
       })
       .then((data) => setState({ data, loading: false, error: null }))

@@ -1,5 +1,7 @@
-const CACHE_NAME = 'salattrack-v1'
-const PRECACHE_URLS = ['/', '/manifest.json']
+const CACHE_NAME = 'salattrack-v2'
+
+// Only pre-cache the manifest — never pre-cache HTML pages (server-rendered dates bake in)
+const PRECACHE_URLS = ['/site.webmanifest']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -22,10 +24,10 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
 
-  // Network only — prayer logging must reach the server
+  // Network only — prayer logging must always reach the server
   if (url.pathname.startsWith('/api/prayer-log')) return
 
-  // Network first, cache fallback — stale prayer times are acceptable
+  // Network first, cache fallback — stale prayer times are acceptable offline
   if (url.pathname.startsWith('/api/prayer-times')) {
     event.respondWith(
       fetch(event.request)
@@ -41,9 +43,33 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Cache first for static assets and pages
+  // Navigation requests (HTML pages): network first, cache fallback for offline only.
+  // Pages contain server-rendered dates — never serve them from cache when online.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          const clone = res.clone()
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
+          return res
+        })
+        .catch(() =>
+          caches.match(event.request).then((cached) => cached ?? Response.error())
+        )
+    )
+    return
+  }
+
+  // Static assets (JS, CSS, images, fonts): cache first — these are content-hashed by Next.js
   event.respondWith(
-    caches.match(event.request).then((cached) => cached ?? fetch(event.request))
+    caches.match(event.request).then((cached) => {
+      if (cached) return cached
+      return fetch(event.request).then((res) => {
+        const clone = res.clone()
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone))
+        return res
+      })
+    })
   )
 })
 
