@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { startOfWeek, addDays, format } from 'date-fns'
 import { createClient } from '@/lib/supabase/server'
 import { PrayerGrid } from '@/components/prayer/PrayerGrid'
+import { IntentionReminder } from '@/components/islamic/IntentionReminder'
+import { SpiritualDisclaimer } from '@/components/islamic/SpiritualDisclaimer'
 import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons'
 import type { DayLogs, PrayerLog } from '@/types'
 
@@ -80,6 +82,8 @@ export default async function WeeklyPage({
       {/* Page title */}
       <h1 className="text-xl font-semibold text-text-primary">Weekly View</h1>
 
+      <IntentionReminder />
+
       {/* Week navigation */}
       <div className="flex items-center justify-between">
         <Link
@@ -122,6 +126,8 @@ export default async function WeeklyPage({
           </div>
         ))}
       </div>
+
+      <SpiritualDisclaimer />
     </div>
   )
 }

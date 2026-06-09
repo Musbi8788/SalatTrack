@@ -484,3 +484,36 @@ npm install @ducanh2912/next-pwa
 ```
 
 Total: ~8 runtime packages. Keep it lean.
+
+---
+
+## Islamic Compliance Principles
+
+SalatTrack is a tool for muhasabah (self-accountability), not a gamified religious ranking system. The following rules are non-negotiable across all phases:
+
+1. **No public rankings.** Leaderboards, prayer scores, or any comparison with other users are intentionally excluded to protect sincerity (ikhlas) and avoid riya (showing off). This applies to all future phases.
+
+2. **AI as habit coach, not mufti.** The AI analysis feature must never issue fatwas, declare prayers valid or invalid, or judge a user's religious standing. It analyzes behavioral patterns only.
+
+3. **Encouraging language throughout.** Use "area for growth", "opportunity for consistency", "most challenging prayer" — never "failed", "inconsistent", or "worst prayer".
+
+4. **Streak context.** Streaks are displayed with a tooltip clarifying they are motivational tools only and do not measure a person's standing with Allah.
+
+5. **Daily spiritual reminders.** Every analytics and AI page shows a rotating `IntentionReminder` to keep the tool in its proper spiritual context.
+
+---
+
+## Future Features (Post-Phase 7)
+
+> Public prayer leaderboards are intentionally excluded to preserve sincerity and avoid riya (showing off).
+
+| Feature | Priority |
+|---|---|
+| Personal Reflection Journal | Medium |
+| Dua Tracking | Medium |
+| Qada Prayer Tracker | Medium |
+| Quran Reading Consistency | Low |
+| Personal Goal Setting | Medium |
+| Hijri Calendar Display | Medium |
+| Qibla Direction | Medium |
+| Offline Mode | High |

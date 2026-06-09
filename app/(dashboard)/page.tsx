@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { DashboardClient } from '@/components/dashboard/DashboardClient'
+import { IntentionReminder } from '@/components/islamic/IntentionReminder'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -36,6 +37,8 @@ export default async function DashboardPage() {
         </h1>
         <p className="text-sm text-text-muted mt-0.5">{today}</p>
       </div>
+
+      <IntentionReminder />
 
       {/* Prayer times — client component handles geolocation + fetch */}
       <DashboardClient
