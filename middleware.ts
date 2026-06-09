@@ -35,6 +35,11 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
+  // API routes handle auth themselves — never redirect them to the login page
+  if (pathname.startsWith('/api/')) {
+    return supabaseResponse
+  }
+
   // Unauthenticated: redirect away from protected pages
   if (!user && !AUTH_PATHS.some((p) => pathname.startsWith(p))) {
     const url = request.nextUrl.clone()
